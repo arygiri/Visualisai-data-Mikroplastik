@@ -1,0 +1,170 @@
+---
+title: "Mikroplastik Tambak garam"
+author: "Ary Giri Dwi Kartika, S.Kel, M.Si"
+date: '2022-07-30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Olah data mikroplastik
+
+
+```{r cars}
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("readxl")
+library(readxl)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("writexl")
+library(writexl)
+install.packages("formattable")
+library(formattable)
+install.packages("ggrepel")
+library(ggrepel)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r import data, echo=FALSE}
+setwd("D:/Documents/My Job/PUBLIKASI/Mikroplastik Zam")
+newdatamikroplastik <- xlsx::read.xlsx("newdatamikroplastik.xlsx", sheetName = "Sheet1")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r import data, echo=FALSE}
+databangkalan <- filter(newdatamikroplastik, lokasi =="Bangkalan")
+datapamekasan <- filter(newdatamikroplastik, lokasi == "Pamekasan")
+fix(databangkalan)
+fix(datapamekasan)
+str(databangkalan)
+str(datapamekasan)
+
+databangkalan$sampel <- as.factor(databangkalan$sampel)
+datapamekasan$Sample <- as.factor(datapamekasan$sampel)
+jumlah <- c(rep(1,552))
+newdatamikroplastik <- newdatamikroplastik[-553, -(c(8:12))]
+newdatamikroplastik2 <- data.frame(newdatamikroplastik, jumlah)
+datapamekasan <- filter(newdatamikroplastik2, lokasi == "Pamekasan")
+fix(datapamekasan)
+
+```
+
+```{r bar chart, echo=FALSE}
+sumdatapamekasan <- datapamekasan %>% 
+  group_by(jenis) %>% 
+  summarise(sum = sum(jumlah)/100)
+ggp1 <- ggplot(datapamekasan, aes(x =Sample, y =Sum, group = Type))+
+  geom_bar(stat = "identity") + facet_wrap(~Type,ncol=1)+ 
+  xlab ("Sample Code") + 
+  ylab("Amount (particles)")+ 
+  geom_col(aes(fill = Location)) + scale_fill_manual(values = c("#00AFBB", "#E7B800")) + 
+  scale_y_continuous(expand = expansion(0), limits=c(0, 30), breaks=c(0, 5,10,15, 20, 25, 30)) +
+  theme_bw() + theme(legend.position="none") + theme(axis.text = element_text(size = 25)) + 
+  theme(text = element_text(size = 35))
+ggp1
+```
+
+```{r save grafik air, echo=FALSE}
+ggsave("facet pamekasan (group sampel).png", width = 20, height = 20, dpi = 400)
+```
+
+
+```{r plyr data pie chart air, echo=FALSE}
+library(formattable)
+g <- datapamekasan %>%
+  group_by(Type) %>%
+  summarise(Sum = n()) %>%
+  mutate(freq = formattable::percent(Sum / sum(Sum))) %>% 
+  arrange(desc(freq))
+
+sumnewdatapaychartpamekasan <- g %>% 
+  group_by(Type) %>% 
+  summarise(Sum = sum(Sum)/100)
+```
+
+
+```{r pie chart air, echo=FALSE}
+library(ggrepel)
+ggplot(sumnewdatapaychartpamekasan, aes(x = "" , y = Sum, fill = fct_inorder(Type))) +
+  geom_col(width = 1, color = 1) +
+  coord_polar(theta = "y") +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  geom_label_repel(data = g,
+                   aes(y = freq, label = paste0(freq)),
+                   size = 5.5, nudge_x = , show.legend = F) +
+  guides(fill = guide_legend(title = "Type")) +
+  theme_void()
+
+```
+
+```{r save grafik pie, echo=FALSE}
+ggsave("PieChartAir.png",widt = 7, height = 5, dpi = 400)
+```
+
+```{r import data garam, echo=FALSE}
+datamikroplastikdigaram <- xlsx::read.xlsx("datamikroplastikdigaram.xlsx", sheetName = "Sheet1")
+fix(datamikroplastikdigaram)
+datamikroplastikdigaram <- datamikroplastikdigaram[,-8:-9]
+```
+
+```{r menambahkan kolom jumlah, echo=FALSE}
+jumlah <- c(rep(1,56))
+datamikroplastikdigaram <- data.frame(datamikroplastikdigaram, jumlah)
+datamikroplastikdigarampamekasan <- filter(datamikroplastikdigaram, Location =="pamekasan")
+```
+
+```{r summary variabel, echo=FALSE}
+sumdatamikroplastikdigarampamekasan <- datamikroplastikdigarampamekasan %>% 
+  group_by(Type) %>% 
+  summarise(Sum = sum(jumlah)/100)
+```
+
+```{r save grafik, echo=FALSE}
+ggpgarampamekasan <- ggplot(datamikroplastikdigarampamekasan, aes(x = Sample, 
+                                                                  y = jumlah, group = Type)) + 
+  geom_bar(stat = "identity") + facet_grid(.~ Type) + xlab("Sample Code") + 
+  ylab("Amount (particles)") + geom_col(aes(fill = Location)) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800")) + 
+  scale_y_continuous(expand = expansion(0), limits = c(0, 20)) + 
+  theme_bw() + theme(legend.position="none")+
+  theme(axis.text = element_text(size = 25)) + 
+  theme(text = element_text(size = 35))
+  
+
+ggpgarampamekasan
+```
+
+
+```{r save grafik, echo=FALSE}
+ggsave("facet pamekasan garam.png", width = 20, height = 10, dpi = 400)
+```
+
+```{r dplyr piechart garam, echo=FALSE}
+library(formattable)
+ggarampamekasan <- datamikroplastikdigarampamekasan %>%
+  group_by(Type) %>%
+  summarise(jumlah = n()*5) %>%  mutate(freq = formattable::percent(jumlah / sum(jumlah))) %>% 
+  arrange(desc(freq))
+```
+
+```{r pie chart garam, echo=FALSE}
+ggplot(ggarampamekasan, aes(x = "" , y = freq, fill = fct_inorder(Type))) +
+  geom_col(width = 1, color = 1) + coord_polar(theta = "y") +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  geom_label_repel(data = ggarampamekasan,
+                   aes(y = freq, label = paste0(freq, "%")),
+                   size = 5.5, nudge_x = , show.legend = FALSE) +
+  guides(fill = guide_legend(title = "Type")) +
+  theme_void()
+
+ggsave("PieChart Garam.png", widt = 7, height = 5, dpi = 400)
+```
+
